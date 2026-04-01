@@ -46,4 +46,26 @@ app.delete('/api/ventas/:id', async (req, res) => {
     res.sendStatus(204);
 });
 
+const fs = require('fs');
+
+app.get('/api/migrar', async (req, res) => {
+    try {
+        // 1. Leer el archivo JSON original
+        const data = JSON.parse(fs.readFileSync('./ventas.json', 'utf8'));
+        
+        if (data.length === 0) {
+            return res.send("El archivo JSON está vacío.");
+        }
+
+        // 2. Insertar los datos en MongoDB
+        // Usamos insertMany para subir todo de un solo golpe
+        await Venta.insertMany(data);
+
+        res.send(`¡Éxito! Se han migrado ${data.length} ventas a MongoDB.`);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error durante la migración: " + error.message);
+    }
+});
+
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
