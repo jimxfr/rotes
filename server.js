@@ -7,7 +7,7 @@ app.use(express.json());
 app.use(express.static('.'));
 
 // CONEXIÓN A MONGODB (Pega aquí tu código de conexión de Atlas)
-const mongoURI = "TU_CADENA_DE_CONEXION_AQUI"; 
+const mongoURI = "mongodb+srv://admin:admin@cluster0.jsrqabx.mongodb.net/?appName=Cluster0"; 
 mongoose.connect(mongoURI).then(() => console.log("Conectado a MongoDB")).catch(err => console.log(err));
 
 // DEFINIR EL MODELO DE DATOS (Lo que antes era tu JSON)
