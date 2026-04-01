@@ -48,23 +48,31 @@ app.delete('/api/ventas/:id', async (req, res) => {
 
 const fs = require('fs');
 
+// PEGA ESTO JUSTO ANTES DE app.listen(PORT, ...)
 app.get('/api/migrar', async (req, res) => {
     try {
-        // 1. Leer el archivo JSON original
-        const data = JSON.parse(fs.readFileSync('./ventas.json', 'utf8'));
-        
-        if (data.length === 0) {
-            return res.send("El archivo JSON está vacío.");
-        }
+        const filePath = './ventas.json';
+        if (!fs.existsSync(filePath)) return res.send("No se encontró el archivo ventas.json");
 
-        // 2. Insertar los datos en MongoDB
-        // Usamos insertMany para subir todo de un solo golpe
-        await Venta.insertMany(data);
+        const rawData = fs.readFileSync(filePath, 'utf8');
+        const ventasViejas = JSON.parse(rawData);
 
-        res.send(`¡Éxito! Se han migrado ${data.length} ventas a MongoDB.`);
+        // Mapeamos los datos viejos al formato nuevo de MongoDB
+        const ventasAdaptadas = ventasViejas.map(v => ({
+            cliente: v.cliente || "Migración Antigua",
+            montoTotal: parseFloat(v.montoTotal || v.monto || 0),
+            costoBase: parseFloat(v.costoBase || 0),
+            comision: parseFloat(v.comision || 0),
+            tipo: v.tipo || "Contado",
+            descripcion: v.descripcion || "Venta migrada",
+            comisionPagada: v.comisionPagada || false,
+            fecha: v.fecha || new Date().toLocaleString()
+        }));
+
+        await Venta.insertMany(ventasAdaptadas);
+        res.send(`✅ Se migraron ${ventasAdaptadas.length} registros con éxito.`);
     } catch (error) {
-        console.error(error);
-        res.status(500).send("Error durante la migración: " + error.message);
+        res.status(500).send("Error: " + error.message);
     }
 });
 
