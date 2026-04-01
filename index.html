@@ -201,7 +201,7 @@
         cargarVentas();
         async function togglePago(id, estado) {
             try {
-                await fetch(`/api/ventas/${id}`, {
+                await fetch(`/api/ventas/${_id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ comisionPagada: estado })
@@ -217,7 +217,7 @@
             
             if (confirm(mensaje)) {
                 try {
-                    const res = await fetch(`/api/ventas/${id}`, {
+                    const res = await fetch(`/api/ventas/${_id}`, {
                         method: 'DELETE'
                     });
 
