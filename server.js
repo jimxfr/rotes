@@ -1,52 +1,49 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static('.')); // Sirve el archivo index.html
+app.use(express.static('.'));
 
-const DB_FILE = './ventas.json';
+// CONEXIÓN A MONGODB (Pega aquí tu código de conexión de Atlas)
+const mongoURI = "TU_CADENA_DE_CONEXION_AQUI"; 
+mongoose.connect(mongoURI).then(() => console.log("Conectado a MongoDB")).catch(err => console.log(err));
 
-// Ruta para obtener las ventas
-app.get('/api/ventas', (req, res) => {
-    const data = fs.readFileSync(DB_FILE);
-    res.json(JSON.parse(data));
+// DEFINIR EL MODELO DE DATOS (Lo que antes era tu JSON)
+const VentaSchema = new mongoose.Schema({
+    cliente: String,
+    montoTotal: Number,
+    costoBase: Number,
+    comision: Number,
+    tipo: String,
+    descripcion: String,
+    comisionPagada: { type: Boolean, default: false },
+    fecha: { type: String, default: () => new Date().toLocaleString() }
 });
 
-// Ruta para guardar una venta
-app.post('/api/ventas', (req, res) => {
-    const data = JSON.parse(fs.readFileSync(DB_FILE));
-    const nuevaVenta = {
-        id: Date.now(),
-        ...req.body,
-        fecha: new Date().toLocaleString()
-    };
-    data.push(nuevaVenta);
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+const Venta = mongoose.model('Venta', VentaSchema);
+
+// RUTAS API
+app.get('/api/ventas', async (req, res) => {
+    const ventas = await Venta.find().sort({ _id: -1 });
+    res.json(ventas);
+});
+
+app.post('/api/ventas', async (req, res) => {
+    const nuevaVenta = new Venta(req.body);
+    await nuevaVenta.save();
     res.status(201).json(nuevaVenta);
 });
 
-// Ruta para actualizar el estado de pago de la comisión
-app.patch('/api/ventas/:id', (req, res) => {
-    const data = JSON.parse(fs.readFileSync(DB_FILE));
-    const index = data.findIndex(v => v.id == req.params.id);
-    
-    if (index !== -1) {
-        data[index].comisionPagada = req.body.comisionPagada;
-        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-        res.json(data[index]);
-    } else {
-        res.status(404).send('Venta no encontrada');
-    }
+app.patch('/api/ventas/:id', async (req, res) => {
+    const venta = await Venta.findByIdAndUpdate(req.params.id, { comisionPagada: req.body.comisionPagada }, { new: true });
+    res.json(venta);
 });
 
-app.delete('/api/ventas/:id', (req, res) => {
-    const data = JSON.parse(fs.readFileSync(DB_FILE));
-    const nuevosDatos = data.filter(v => v.id != req.params.id);
-    fs.writeFileSync(DB_FILE, JSON.stringify(nuevosDatos, null, 2));
+app.delete('/api/ventas/:id', async (req, res) => {
+    await Venta.findByIdAndDelete(req.params.id);
     res.sendStatus(204);
 });
 
-app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
