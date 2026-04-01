@@ -46,6 +46,8 @@ app.delete('/api/ventas/:id', async (req, res) => {
     res.sendStatus(204);
 });
 
-const fs = require('fs');
+app.get('/ping', (req, res) => {
+    res.send('Servidor Activo');
+});
 
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
